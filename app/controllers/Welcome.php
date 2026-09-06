@@ -2,8 +2,10 @@
 defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
 class Welcome extends Controller {
-	public function index() {
-		$this->call->view('welcome_page');
-	}
+    public function index() {
+        $this->call->model('UsersModel');
+        $data['users'] = $this->UsersModel->all();
+        $this->call->view('users', $data);
+    }
 }
 ?>
