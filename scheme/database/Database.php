@@ -238,6 +238,8 @@ class Database {
             ? $database_config['password']
             : '';
 
+        $ssl = !empty($database_config['ssl']);
+
         $path = isset($database_config['path']) && !empty($database_config['path'])
             ? $database_config['path']
             : null;
@@ -267,6 +269,10 @@ class Database {
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
         );
+
+        if ($driver === 'mysql' && $ssl && defined('PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT')) {
+            $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+        }
 
         try {
             $this->db = new PDO($dsn, $username, $password, $options);
