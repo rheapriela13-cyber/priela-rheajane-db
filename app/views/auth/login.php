@@ -2,20 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Login - Product System</title>
+    <title>Sign in - Product System</title>
     <style>
-        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f4f4f4; }
-        .login-card { background: white; padding: 25px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); width: 300px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; }
-        input { width: 100%; padding: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        .error { color: red; margin-bottom: 10px; font-size: 14px; }
+        :root { --pink: #c9828d; --nude: #f4e9df; --cream: #fffaf5; --coffee: #4c3028; --muted: #876e63; --line: #e3cec1; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Trebuchet MS', sans-serif; display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 24px; color: var(--coffee); background: var(--nude); }
+        .login-card { width: min(100%, 390px); padding: 42px; border: 1px solid var(--line); border-radius: 18px; background: var(--cream); box-shadow: 0 18px 45px rgba(76, 48, 40, .12); }
+        .eyebrow { color: var(--pink); font-size: 12px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; }
+        h2 { margin: 10px 0 8px; font-family: Georgia, serif; font-size: 34px; font-weight: normal; }
+        .intro { margin: 0 0 28px; color: var(--muted); font-size: 14px; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 7px; color: var(--muted); font-size: 13px; font-weight: bold; }
+        input { width: 100%; padding: 13px 14px; border: 1px solid var(--line); border-radius: 9px; outline: none; background: white; color: var(--coffee); font: inherit; }
+        input:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(201, 130, 141, .16); }
+        button { width: 100%; margin-top: 6px; padding: 13px; border: 0; border-radius: 9px; cursor: pointer; background: var(--coffee); color: white; font: inherit; font-weight: bold; }
+        button:hover { background: #674338; }
+        .error { margin-bottom: 16px; padding: 11px 12px; border-radius: 8px; background: #f7dfe0; color: #8c3f48; font-size: 13px; }
     </style>
 </head>
 <body>
     <div class="login-card">
+        <div class="eyebrow">Product system</div>
         <h2>Login</h2>
+        <p class="intro">Welcome back. Sign in to continue.</p>
         <?php if(!empty($error)): ?>
             <div class="error"><?= $error; ?></div>
         <?php endif; ?>

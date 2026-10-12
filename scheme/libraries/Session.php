@@ -180,37 +180,39 @@ class Session {
             ? $prefix . ($this->config['sess_cookie_name'] ?? 'lavalust_session')
             : ($this->config['sess_cookie_name'] ?? ini_get('session.name'));
 
-        ini_set('session.name', $this->config['cookie_name']);
+        if (!headers_sent() && session_status() === PHP_SESSION_NONE) {
+            ini_set('session.name', $this->config['cookie_name']);
 
-        // Expiration
-        $this->config['sess_expiration'] = (int)($this->config['sess_expiration'] ?? ini_get('session.gc_maxlifetime') ?: 7200);
-        ini_set('session.gc_maxlifetime', $this->config['sess_expiration']);
+            // Expiration
+            $this->config['sess_expiration'] = (int)($this->config['sess_expiration'] ?? ini_get('session.gc_maxlifetime') ?: 7200);
+            ini_set('session.gc_maxlifetime', $this->config['sess_expiration']);
 
-        $this->config['cookie_expiration'] = isset($this->config['cookie_expiration'])
-            ? (int)$this->config['cookie_expiration']
-            : (($this->config['sess_expire_on_close'] ?? false) ? 0 : $this->config['sess_expiration']);
+            $this->config['cookie_expiration'] = isset($this->config['cookie_expiration'])
+                ? (int)$this->config['cookie_expiration']
+                : (($this->config['sess_expire_on_close'] ?? false) ? 0 : $this->config['sess_expiration']);
 
-        // Secure cookie params (2026 best practices)
-        session_set_cookie_params([
-            'lifetime' => $this->config['cookie_expiration'],
-            'path'     => $this->config['cookie_path'] ?? '/',
-            'domain'   => $this->config['cookie_domain'] ?? '',
-            'secure'   => $this->config['cookie_secure'] ?? false,   // Set true in production + HTTPS
-            'httponly' => true,
-            'samesite' => $this->config['cookie_samesite'] ?? 'Strict'  // Strict is safer
-        ]);
+            // Secure cookie params (2026 best practices)
+            session_set_cookie_params([
+                'lifetime' => $this->config['cookie_expiration'],
+                'path'     => $this->config['cookie_path'] ?? '/',
+                'domain'   => $this->config['cookie_domain'] ?? '',
+                'secure'   => $this->config['cookie_secure'] ?? false,   // Set true in production + HTTPS
+                'httponly' => true,
+                'samesite' => $this->config['cookie_samesite'] ?? 'Strict'  // Strict is safer
+            ]);
 
-        // Hardened PHP session settings
-        ini_set('session.use_trans_sid', 0);
-        ini_set('session.use_strict_mode', 1);
-        ini_set('session.use_cookies', 1);
-        ini_set('session.use_only_cookies', 1);
-        ini_set('session.cookie_httponly', 1);
-        
-		if (version_compare(PHP_VERSION, '8.4.0', '<')) {
-			ini_set('session.sid_length', $this->_get_sid_length());
-			ini_set('session.sid_bits_per_character', 6);
-		}
+            // Hardened PHP session settings
+            ini_set('session.use_trans_sid', 0);
+            ini_set('session.use_strict_mode', 1);
+            ini_set('session.use_cookies', 1);
+            ini_set('session.use_only_cookies', 1);
+            ini_set('session.cookie_httponly', 1);
+            
+            if (version_compare(PHP_VERSION, '8.4.0', '<')) {
+                ini_set('session.sid_length', $this->_get_sid_length());
+                ini_set('session.sid_bits_per_character', 6);
+            }
+        }
 
         // Security initialization
         $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
@@ -223,7 +225,9 @@ class Session {
 
         // Start session
         $existing_session = !empty($_COOKIE[$this->config['cookie_name']]);
-        session_start();
+        if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
+            session_start();
+        }
 
         if (!$existing_session && empty($_SESSION)) {
             $creation_msg = $this->security_track_session_creation($ip, $fingerprint);
@@ -667,14 +671,34 @@ class Session {
 	private function _security_init()
     {
         $dir = dirname($this->security_file);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0700, true);   // More restrictive permissions
+
+        if ((!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) || (is_dir($dir) && !is_writable($dir))) {
+            $fallback_dir = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'lavalust';
+
+            if (!is_dir($fallback_dir) && !@mkdir($fallback_dir, 0700, true) && !is_dir($fallback_dir)) {
+                return;
+            }
+
+            if (!is_writable($fallback_dir) && !@chmod($fallback_dir, 0700)) {
+                return;
+            }
+
+            $this->security_file = $fallback_dir . DIRECTORY_SEPARATOR . 'session_security.json';
+            $dir = $fallback_dir;
+        }
+
+        if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) {
+            return;
         }
 
         if (!file_exists($this->security_file)) {
-            file_put_contents($this->security_file, json_encode([], JSON_PRETTY_PRINT));
-            chmod($this->security_file, 0600);
+            $written = @file_put_contents($this->security_file, json_encode([], JSON_PRETTY_PRINT), LOCK_EX);
+            if ($written === false) {
+                return;
+            }
         }
+
+        @chmod($this->security_file, 0600);
     }
 
 	/**
