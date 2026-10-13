@@ -16,24 +16,28 @@ class Auth extends Controller {
     }
 
     public function login_process() {
-        $username = $this->io->post('username');
-        $password = $this->io->post('password');
+    $username = $this->io->post('username');
+    $password = $this->io->post('password');
 
-        $user = $this->db->table('users')->where('username', $username)->get();
+    $user = $this->db->table('users')->where('username', $username)->get();
 
-        if($user && password_verify($password, $user['password'])) {
-            $this->session->set_userdata([
-                'user_id' => $user['id'],
-                'username' => $user['username'],
-                'role' => $user['role'] ?? 'user',
-                'logged_in' => TRUE
-            ]);
-            redirect('products');
+    if($user && password_verify($password, $user['password'])) {
+        $this->session->set_userdata([
+            'user_id' => $user['id'],
+            'username' => $user['username'],
+            'role' => $user['role'] ?? 'user',
+            'logged_in' => TRUE
+        ]);
+        redirect('products');
+    } else {
+        if (!$user) {
+            $data['error'] = 'DEBUG: user not found in database';
         } else {
-            $data['error'] = 'Invalid username or password!';
-            $this->call->view('auth/login', $data);
+            $data['error'] = 'DEBUG: user found, password does not match';
         }
+        $this->call->view('auth/login', $data);
     }
+}
 
     public function logout() {
         $this->session->unset_userdata(['user_id', 'username', 'role', 'logged_in']);
