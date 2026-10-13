@@ -88,7 +88,7 @@ $config['date_default_timezone'] = 'Asia/Manila';
 | WARNING: You MUST set this value!
 |
 */
-$config['base_url'] 				= 'http://127.0.0.1:3000/';
+$config['base_url'] = getenv('BASE_URL') ?: (getenv('RENDER_EXTERNAL_URL') ?: '');
 
 /*
 |--------------------------------------------------------------------------
