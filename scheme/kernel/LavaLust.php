@@ -241,8 +241,16 @@ if (php_sapi_name() === 'cli') {
     
 } else {
     $base  = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/');
-	$path  = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-	$url   = $router->sanitize_url(substr($path, strlen($base)) ?: '/');
+    $path  = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/';
+    if ($base !== '' && ($path === $base || strpos($path, $base . '/') === 0)) {
+        $path = substr($path, strlen($base));
+    } elseif (defined('PUBLIC_DIR') && basename($base) === PUBLIC_DIR) {
+        $app_base = rtrim(dirname($base), '/');
+        if ($app_base !== '' && ($path === $app_base || strpos($path, $app_base . '/') === 0)) {
+            $path = substr($path, strlen($app_base));
+        }
+    }
+    $url   = $router->sanitize_url($path ?: '/');
     $method = isset($_SERVER['REQUEST_METHOD']) ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
 }
 
